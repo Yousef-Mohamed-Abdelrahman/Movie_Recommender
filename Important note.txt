@@ -1,0 +1,4 @@
+Due to github restruction on the large filr there is the links for those datasets
+
+movie_metadata.csv (link) : https://www.kaggle.com/datasets/carolzhangdc/imdb-5000-movie-dataset
+credits.csv (link) : https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset

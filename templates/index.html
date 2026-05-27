@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en" class="dark scroll-smooth">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if title %}{{ title }} | {% endif %}Movie Recommender</title>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif']
+          },
+          boxShadow: {
+            glow: '0 24px 90px rgba(14, 165, 233, 0.22)'
+          }
+        }
+      }
+    };
+    var tailwind = window.tailwind;
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --page-bg: #f6f8fc;
+      --page-text: #102033;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-strong: #ffffff;
+      --surface-soft: rgba(232, 240, 253, 0.78);
+      --border: #c7d7ee;
+      --muted: #5d6f86;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --accent-text: #1d4ed8;
+      --good: #047857;
+      --bad: #be123c;
+      --shadow: 0 24px 80px rgba(37, 99, 235, 0.14);
+    }
+
+    html.dark {
+      --page-bg: #050816;
+      --page-text: #eef6ff;
+      --surface: rgba(11, 18, 32, 0.86);
+      --surface-strong: #0f172a;
+      --surface-soft: rgba(30, 41, 59, 0.72);
+      --border: rgba(125, 211, 252, 0.18);
+      --muted: #93a4b8;
+      --accent: #22d3ee;
+      --accent-soft: rgba(34, 211, 238, 0.13);
+      --accent-text: #a5f3fc;
+      --good: #34d399;
+      --bad: #fb7185;
+      --shadow: 0 28px 100px rgba(34, 211, 238, 0.18);
+    }
+
+    html.dark body {
+      background:
+        radial-gradient(circle at 8% 0%, rgba(34, 211, 238, 0.18), transparent 34%),
+        radial-gradient(circle at 90% 10%, rgba(99, 102, 241, 0.16), transparent 30%),
+        var(--page-bg);
+      color: var(--page-text);
+    }
+
+    html:not(.dark) body {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.13), transparent 30%),
+        radial-gradient(circle at 88% 8%, rgba(14, 165, 233, 0.12), transparent 28%),
+        var(--page-bg);
+      color: var(--page-text);
+    }
+
+    .theme-surface,
+    .theme-card {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--page-text);
+    }
+
+    .theme-card {
+      box-shadow: var(--shadow);
+    }
+
+    .theme-soft {
+      background: var(--surface-soft);
+      border-color: var(--border);
+    }
+
+    .theme-muted {
+      color: var(--muted);
+    }
+
+    .theme-copy {
+      color: color-mix(in srgb, var(--page-text) 78%, var(--muted));
+    }
+
+    .theme-accent {
+      color: var(--accent-text);
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+    }
+
+    .theme-input {
+      background: var(--surface-strong);
+      border-color: var(--border);
+      color: var(--page-text);
+    }
+
+    .theme-input::placeholder {
+      color: var(--muted);
+    }
+
+    .theme-good {
+      color: var(--good);
+      background: color-mix(in srgb, var(--good) 13%, transparent);
+    }
+
+    .theme-bad {
+      color: var(--bad);
+      background: color-mix(in srgb, var(--bad) 13%, transparent);
+    }
+
+    .suggestion-panel[hidden] {
+      display: none;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body
+  class="min-h-screen bg-slate-50 text-slate-950 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
+  <header class="theme-surface sticky top-0 z-40 border-b backdrop-blur-md">
+    <nav
+      class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-3">
+        <span
+          class="grid h-11 w-11 place-items-center rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-glow">MR</span>
+        <span>
+          <span class="block text-lg font-bold tracking-tight">Movie Recommender</span>
+          <span class="theme-muted block text-xs">Your Movie Discovery Universe</span>
+        </span>
+      </a>
+
+      <form id="search-form" class="relative flex w-full max-w-2xl items-center gap-2 lg:mx-8" autocomplete="off">
+        <label for="movie-search" class="sr-only">Search movies</label>
+        <input id="movie-search" name="movie" type="search" autocomplete="off" autocapitalize="off" spellcheck="false"
+          placeholder="Search a movie title..."
+          class="theme-input h-12 w-full rounded-lg border px-4 text-sm outline-none ring-cyan-400/50 transition focus:border-cyan-300 focus:ring-4">
+        <div id="suggestion-panel"
+          class="suggestion-panel theme-surface absolute left-0 right-[104px] top-14 z-50 max-h-80 overflow-y-auto rounded-lg border p-2 shadow-2xl"
+          hidden></div>
+        <button type="submit"
+          class="h-12 rounded-lg bg-cyan-400 px-5 text-sm font-bold text-slate-950 transition-all duration-300 hover:scale-105 hover:bg-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-300/40">Search</button>
+      </form>
+
+      <button id="theme-toggle" type="button"
+        class="theme-surface flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-all duration-300 hover:scale-105"
+        aria-pressed="true">
+        <span id="theme-icon" class="text-lg leading-none" aria-hidden="true">☾</span>
+        <span id="theme-label">Dark</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <section id="loading-panel" class="hidden" aria-live="polite">
+      <div class="grid gap-6 lg:grid-cols-[280px,1fr]">
+        <div class="h-[420px] animate-pulse rounded-lg bg-slate-200 dark:bg-white/10"></div>
+        <div class="space-y-5">
+          <div class="h-10 w-2/3 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+          <div class="h-28 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div class="h-20 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+            <div class="h-20 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+            <div class="h-20 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+            <div class="h-20 animate-pulse rounded bg-slate-200 dark:bg-white/10"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% if title %}
+    <section id="movie-profile" class="grid gap-8 lg:grid-cols-[320px,1fr]">
+      <div class="theme-card overflow-hidden rounded-lg border backdrop-blur-md">
+        <img src="{{ poster }}" alt="{{ title }} poster" class="h-full min-h-[440px] w-full object-cover">
+      </div>
+      <div class="flex flex-col justify-center">
+        <div class="theme-muted mb-4 flex flex-wrap items-center gap-3 text-sm">
+          <span>{{ status }}</span>
+          <span aria-hidden="true">/</span>
+          <span data-release-date="{{ release_date }}">{{ release_date }}</span>
+          <span aria-hidden="true">/</span>
+          <span data-runtime="{{ runtime }}">{{ runtime }} min</span>
+        </div>
+        <h1 class="text-4xl font-black tracking-tight sm:text-6xl">{{ title }}</h1>
+        <div class="mt-5 flex flex-wrap gap-2">
+          {% for genre in genres.split(',') if genres %}
+          <span class="theme-accent rounded-full border px-3 py-1 text-xs font-semibold">{{
+            genre.strip() }}</span>
+          {% endfor %}
+        </div>
+        <p class="theme-copy mt-6 max-w-4xl text-base leading-8">{{ overview }}</p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="theme-card rounded-lg border p-4 backdrop-blur-md">
+            <p class="theme-muted text-xs uppercase">Vote Average</p>
+            <div class="mt-3 flex items-center gap-3">
+              <div class="relative grid h-16 w-16 place-items-center rounded-full bg-conic-gradient"
+                data-rating="{{ vote_average }}">
+                <div class="absolute inset-1 rounded-full bg-white dark:bg-slate-950"></div>
+                <span class="relative text-lg font-black">{{ vote_average }}</span>
+              </div>
+              <span class="theme-muted text-sm">out of 10</span>
+            </div>
+          </div>
+          <div class="theme-card rounded-lg border p-4 backdrop-blur-md">
+            <p class="theme-muted text-xs uppercase">Votes</p>
+            <p class="mt-3 text-3xl font-black">{{ vote_count }}</p>
+          </div>
+          <div class="theme-card rounded-lg border p-4 backdrop-blur-md">
+            <p class="theme-muted text-xs uppercase">Runtime</p>
+            <p class="mt-3 text-3xl font-black" data-runtime-label="{{ runtime }}">{{ runtime }}</p>
+          </div>
+          <div class="theme-card rounded-lg border p-4 backdrop-blur-md">
+            <p class="theme-muted text-xs uppercase">Release</p>
+            <p class="mt-3 text-2xl font-black" data-release-label="{{ release_date }}">{{ release_date }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-12">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black tracking-tight">Top Cast</h2>
+          <p class="theme-muted text-sm">Click a profile for biographical details.</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10">
+        {% for cast_name, cast in casts.items() %}
+        <button
+          class="cast-card theme-card group rounded-lg border p-3 text-left backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-cyan-300/50"
+          type="button" data-cast-name="{{ cast_name }}" data-cast-id="{{ cast[0] }}">
+          <img src="{{ cast[2] }}" alt="{{ cast_name }}" class="aspect-[2/3] w-full rounded-md object-cover">
+          <span class="mt-3 block truncate text-sm font-bold">{{ cast_name }}</span>
+          <span class="theme-muted block truncate text-xs">{{ cast[1] }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="mt-12">
+      <h2 class="mb-5 text-2xl font-black tracking-tight">Review Dashboard</h2>
+      <div class="grid gap-3 md:grid-cols-2">
+        {% for review, status in reviews.items() %}
+        <button type="button"
+          class="review-card theme-card rounded-lg border p-5 text-left backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:border-cyan-300/50"
+          data-review="{{ review | e }}" data-status="{{ status | e }}">
+          <div
+            class="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {% if status == 'Good' %}theme-good{% elif status == 'Bad' %}theme-bad{% else %}theme-muted theme-soft{% endif %}">
+            {% if status == 'Good' %}Good :){% elif status == 'Bad' %}Bad :({% else %}Unavailable{% endif %}
+          </div>
+          <p
+            class="theme-copy overflow-hidden text-sm leading-6 [display:-webkit-box] [-webkit-line-clamp:6] [-webkit-box-orient:vertical]">
+            {{ review }}</p>
+          <span class="theme-muted mt-4 block text-xs font-bold uppercase tracking-[.18em]">Read full review</span>
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="mt-12">
+      <h2 class="mb-5 text-2xl font-black tracking-tight">Recommendations</h2>
+      <div class="space-y-10">
+        {% for section_title, section_cards in recommendation_sections.items() %}
+        <section>
+          <div class="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-black tracking-tight">{{ section_title }}</h3>
+              <p class="theme-muted text-sm">
+                {% if section_title == 'By Actor' %}
+                Movies connected through shared cast members.
+                {% elif section_title == 'By Director' %}
+                Movies connected through the same director.
+                {% else %}
+                Movies connected through overlapping genres.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          {% if section_cards %}
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10">
+            {% for poster_url, movie_name in section_cards.items() %}
+            <button type="button"
+              class="recommendation-card theme-card group rounded-lg border p-3 text-left backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-cyan-300/50"
+              data-movie="{{ movie_name }}">
+              <img src="{{ poster_url }}" alt="{{ movie_name }} poster"
+                class="aspect-[2/3] w-full rounded-md object-cover">
+              <span class="mt-3 block text-sm font-bold leading-5">{{ movie_name }}</span>
+            </button>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="theme-card rounded-lg border p-5">
+            <p class="theme-muted text-sm">No matching movies were found in this dataset for this category.</p>
+          </div>
+          {% endif %}
+        </section>
+        {% endfor %}
+      </div>
+    </section>
+    {% else %}
+    <section class="flex min-h-[68vh] items-center">
+      <div class="max-w-3xl">
+        <p class="mb-4 text-sm font-bold uppercase tracking-[.24em]" style="color: var(--accent-text)">Streaming
+          intelligence</p>
+        <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Movie Recommender</h1>
+        <p class="theme-copy mt-6 max-w-2xl text-lg leading-8">Search any movie title to instantly open an
+          interactive dashboard featuring cast biographies, sentiment-analyzed reviews, and deep, explorable
+          recommendations.</p>
+      </div>
+    </section>
+    {% endif %}
+  </main>
+
+  <div id="cast-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md" role="dialog"
+    aria-modal="true" aria-labelledby="cast-modal-title">
+    <div class="theme-surface max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border shadow-2xl">
+      <div class="flex items-center justify-between border-b p-4" style="border-color: var(--border)">
+        <h2 id="cast-modal-title" class="text-xl font-black">Cast Biography</h2>
+        <button id="cast-modal-close" type="button"
+          class="theme-soft rounded-lg border px-3 py-2 text-sm font-bold transition hover:scale-105">Close</button>
+      </div>
+      <div id="cast-modal-body" class="grid max-h-[calc(90vh-70px)] gap-6 overflow-y-auto p-5 md:grid-cols-[220px,1fr]">
+      </div>
+    </div>
+  </div>
+
+  <div id="review-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md" role="dialog"
+    aria-modal="true" aria-labelledby="review-modal-title">
+    <div class="theme-surface max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg border shadow-2xl">
+      <div class="flex items-center justify-between border-b p-4" style="border-color: var(--border)">
+        <div>
+          <p id="review-modal-status" class="mb-1 inline-flex rounded-full px-3 py-1 text-xs font-bold"></p>
+          <h2 id="review-modal-title" class="text-xl font-black">Full Review</h2>
+        </div>
+        <button id="review-modal-close" type="button"
+          class="theme-soft rounded-lg border px-3 py-2 text-sm font-bold transition hover:scale-105">Close</button>
+      </div>
+      <div class="max-h-[calc(90vh-96px)] overflow-y-auto p-5">
+        <p id="review-modal-body" class="theme-copy whitespace-pre-line text-sm leading-7"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.suggestions = {{ suggestions | default ([]) | tojson }};
+    window.castDetails = {{ cast_details | default ({}) | tojson }};
+    window.TMDB_API_KEY = "{{ tmdb_api_key | default('', true) }}";
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}?v=9" defer></script>
+</body>
+
+</html>
